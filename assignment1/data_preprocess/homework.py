@@ -6,6 +6,7 @@ from utils import  read_warc_file, read_wet_file
 from datasets import load_dataset
 from typing import Set, Dict
 import string
+from bs4 import BeautifulSoup
 
 def retrieve_bad_words() -> set[str]:
     """Helper function - that reads a list of bad words from a file and returns them as a set.
@@ -25,6 +26,9 @@ def html_to_text(html) -> str:
     Returns:
         str: Plain text extracted from HTML.
     """
+    soup = BeautifulSoup(html, "html.parser")
+    text = soup.get_text()
+    return text
     pass 
 
 def replace_pii(text: str) -> str:
@@ -35,6 +39,9 @@ def replace_pii(text: str) -> str:
         str: Text with PII obfuscated.
     """
     # Replace US social security numbers (XXX-XX-XXXX format)
+    masked_ssn = re.sub(r"\d{3}-\d{2}-\d{4}", "XXX-XX-XXXX", text)
+    masked_num = re.sub(r"\+1\d{10}", "+1XXXXXXXXXX", masked_ssn )
+    return masked_num
     pass 
     
 
@@ -45,6 +52,14 @@ def clean_text(text: str) -> str:
     Returns:
         str: cleaned document
     """
+    paragraphs = text.split("\n")
+    clean_paragraphs = []
+    for paragraph in paragraphs:
+        if re.search(r"[A-Za-z0-9]{101, }", paragraph):
+            continue
+        if not any(char in string.punctuation for char in paragraph):
+            continue
+
     pass
 
 
@@ -55,7 +70,24 @@ def heuristic_quality_filter(text: str) -> bool:
     Returns:
         bool: returns True if the document passes the filters, False otherwise.
     """
-    pass 
+    bad_words = retrieve_bad_words()
+    if any(bad_word in text for bad_word in bad_words):
+        return False
+    if not any(not char.isspace() for char in text ):
+        return False
+    if not any(char in string.punctuation for char in text):
+        return False #already done before but double check since its specified in the readme md
+    total_characters = len(text)
+    valid_characters = 0
+    for char in text:
+        if char.isalnum() or char.isspace() or char in string.punctuation:
+            valid_characters += 1
+    valid_ratio = valid_characters / total_characters
+
+    if valid_ratio < 0.80:
+        return False
+    return True
+    
 
 
 def is_english_text(text: str) -> bool:
@@ -94,11 +126,11 @@ if __name__ == '__main__' :
         with open(args.output, 'w', encoding='utf-8') as output_file:
             for url, html_text in read_warc_file(args.fname, args.num_records):
                 seen += 1
-                # print("Before HTML to text: ", str(html_text))
+                print("Before HTML to text: ", str(html_text))
                 text = html_to_text(html_text)
-                # print("\n\n\nAfter HTML to text: ", text)
+                print("\n\n\nAfter HTML to text: ", text)
                 cleaned_text = clean_text(text)
-                # print("After cleaning: ", cleaned_text)
+                print("After cleaning: ", cleaned_text)
                 cleaned_nopii_text = replace_pii(cleaned_text)
                 # print("After PII removal: ", cleaned_nopii_text)
                 passes_check = heuristic_quality_filter(cleaned_nopii_text)
