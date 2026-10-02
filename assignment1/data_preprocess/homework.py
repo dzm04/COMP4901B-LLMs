@@ -40,10 +40,9 @@ def replace_pii(text: str) -> str:
     """
     # Replace US social security numbers (XXX-XX-XXXX format)
     masked_ssn = re.sub(r"\d{3}-\d{2}-\d{4}", "XXX-XX-XXXX", text)
-    masked_num = re.sub(r"\+1\d{10}", "+1XXXXXXXXXX", masked_ssn )
+    masked_num = re.sub(r"\+1\d{10}", "+XXXXXXXXXXX", masked_ssn )
     return masked_num
-    pass 
-    
+
 
 def clean_text(text: str) -> str:
     """Removes substrings identified as low-quality according to alphanumeric, whitespace and valid document checks.
@@ -55,12 +54,16 @@ def clean_text(text: str) -> str:
     paragraphs = text.split("\n")
     clean_paragraphs = []
     for paragraph in paragraphs:
-        if re.search(r"[A-Za-z0-9]{101, }", paragraph):
+        if re.search(r"[A-Za-z0-9]{101,}", paragraph):
             continue
         if not any(char in string.punctuation for char in paragraph):
             continue
+        clean_paragraphs.append(paragraph)
 
-    pass
+    clean_paragraphs_s = "\n".join(clean_paragraphs)
+    return clean_paragraphs_s
+
+
 
 
 def heuristic_quality_filter(text: str) -> bool:
@@ -86,8 +89,7 @@ def heuristic_quality_filter(text: str) -> bool:
 
     if valid_ratio < 0.80:
         return False
-    return True
-    
+    return True 
 
 
 def is_english_text(text: str) -> bool:
@@ -97,7 +99,24 @@ def is_english_text(text: str) -> bool:
     Returns:
         bool: True if text is primarily English, False otherwise
     """
-    pass
+    char_english = 0
+    char_total = 0
+    for char in text:
+        if char.isalpha():
+            char_total += 1
+
+        if char in string.ascii_letters:
+            char_english += 1
+
+    if char_total == 0:
+        return False
+
+    english_ratio = char_english/char_total
+
+    if english_ratio < 0.8: #used the same threshold as heuristic filter
+        return False
+    return True
+    
     
 
 def deduplicate_texts(texts: list[str]) -> list[str]:
@@ -106,8 +125,36 @@ def deduplicate_texts(texts: list[str]) -> list[str]:
         texts (list[str]): List of text strings to deduplicate.
     Returns:
         list[str]: Deduplicated list of texts. Implemented a simple Jaccard similarity based deduplication.
+
     """
-    pass
+    deduplicated = []
+    
+    
+    for text in texts:
+        set_a = set(text.split())
+        is_duplicate = False
+
+
+        for kept_text in deduplicated:
+            set_b = set(kept_text.split())
+
+            intersection = len(set_a & set_b)
+            union = len(set_a | set_b)
+            if union == 0:
+                continue
+            
+            similarity = intersection / union
+
+            if similarity >= 0.90: #using a high threshold to catch near identical texts
+                is_duplicate = True
+                break
+
+            
+        if not is_duplicate:
+            deduplicated.append(text)
+
+
+    return deduplicated
 
 
 if __name__ == '__main__' :
@@ -126,11 +173,11 @@ if __name__ == '__main__' :
         with open(args.output, 'w', encoding='utf-8') as output_file:
             for url, html_text in read_warc_file(args.fname, args.num_records):
                 seen += 1
-                print("Before HTML to text: ", str(html_text))
+                # print("Before HTML to text: ", str(html_text))
                 text = html_to_text(html_text)
-                print("\n\n\nAfter HTML to text: ", text)
+                # print("\n\n\nAfter HTML to text: ", text)
                 cleaned_text = clean_text(text)
-                print("After cleaning: ", cleaned_text)
+                # print("After cleaning: ", cleaned_text)
                 cleaned_nopii_text = replace_pii(cleaned_text)
                 # print("After PII removal: ", cleaned_nopii_text)
                 passes_check = heuristic_quality_filter(cleaned_nopii_text)
