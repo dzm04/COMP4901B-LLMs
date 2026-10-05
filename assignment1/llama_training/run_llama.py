@@ -223,7 +223,7 @@ def evaluate_pretraining(dataloader, model, device, marker="val", pad_token_id=N
 def train(args):
     if args.option != "pretrain":
         raise ValueError("train() only supports the 'pretrain' option.")
-    device = torch.device('cuda') if args.use_gpu else torch.device('cpu')
+    device = torch.device('mps') if args.use_gpu else torch.device('cpu')# using local gpu mac m4 pro
 
     tokenizer = Tokenizer(None)
     if not args.data_path or not os.path.isdir(args.data_path):

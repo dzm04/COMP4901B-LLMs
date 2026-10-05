@@ -100,7 +100,18 @@ class Attention(nn.Module):
         
         #TODO
         # ====================== Implement compute_query_key_value_scores here ======================
-        pass
+        qk_t = torch.matmul(query, key.transpose(-2, -1))
+        head_dim = query.shape[-1]
+        seqlen = query.shape[-2]
+        scaled_qk_t = qk_t / math.sqrt(head_dim)
+        mask = torch.triu(torch.ones(seqlen, seqlen, dtype=torch.bool, device=query.device),diagonal=1)
+        masked_scaled_qk_t = scaled_qk_t.masked_fill(mask, float("-inf"))
+        softmax = nn.Softmax(dim=-1)
+        attention_w = softmax(masked_scaled_qk_t)
+        dropout_att_w = self.attn_dropout(attention_w)
+        att_q_k_v = torch.matmul(dropout_att_w, value)
+
+        return att_q_k_v
         # ====================== Implement compute_query_key_value_scores here ======================
 
 

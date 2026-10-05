@@ -1,6 +1,6 @@
 
 # If you don't want to use WANDB for logging, simply ignore this line and the script will still print out metrics
-export WANDB_API_KEY=YOUR_WANDB_API_KEY
+#export WANDB_API_KEY=YOUR_WANDB_API_KEY
 
 
 python run_llama.py \
@@ -16,12 +16,14 @@ python run_llama.py \
   --val_path dev \
   --val_tokenized_dir dev/tokenized \
   --val_per_steps 200 \
-  --test_path  test \
-  --test_tokenized_dir test/tokenized \
   --auto_resume \
   --warmup_ratio 0.1 \
-  --lr 1e-3 
+  --lr 1e-3 \
+  --wandb_project babyllama-hw1 \
+  --wandb_entity dzmanzoor-utrecht-university 
 # --overwrite_tokenized # if you want to overwrite the tokenized data
+#--test_path  test \
+  #--test_tokenized_dir test/tokenized \
 
 
 
