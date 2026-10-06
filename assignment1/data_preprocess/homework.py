@@ -29,7 +29,7 @@ def html_to_text(html) -> str:
     soup = BeautifulSoup(html, "html.parser")
     text = soup.get_text()
     return text
-    pass 
+   
 
 def replace_pii(text: str) -> str:
     """Masks personally identifiable information (PII) from text with the specified masking formats.
