@@ -297,9 +297,11 @@ class Llama(LlamaPreTrainedModel):
                 # select the single most likely index
                 #TODO
                 # ====================== Implement greedy sampling here ======================
-                pass
+                idx_next = torch.argmax(logits_last, dim=-1, keepdim=True)
+                
                 # ====================== Implement greedy sampling here ======================
             else:
+
                 '''
                 Perform temperature sampling:
                 1) identify  the logits at the final step.
@@ -309,14 +311,19 @@ class Llama(LlamaPreTrainedModel):
                 '''
                 logits_work = logits_last
                 if top_k is not None:
+                
                     #TODO
                     # ====================== Implement top-k sampling here ======================
-                    pass
+                    val, indices = torch.topk(logits_work, top_k, dim=-1)
+                    threshold = val[:, -1:] #(batch_size, 1)
+                    logits_work = logits_work.masked_fill(logits_work < threshold, float("-inf"))
+                    
                     # ====================== Implement top-k sampling here ======================
 
                 #TODO
                 # ====================== Implement temperature sampling here ======================
-                pass
+                probs = torch.softmax(logits_work / temperature, dim=-1)
+                idx_next = torch.multinomial(probs, 1)
                 # ====================== Implement temperature sampling here ======================
 
             # append sampled index to the running sequence and continue
